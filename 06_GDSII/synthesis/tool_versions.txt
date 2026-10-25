@@ -1,0 +1,2 @@
+Yosys 0.38+92 (git sha1 84116c9a3, clang 14.0.0-1ubuntu1.1 -fPIC -Os)
+Liberty: /home/cao_dat/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib

@@ -1,0 +1,7 @@
+*.log
+gls_sim
+*.vcd
+oss-cad-suite*
+*.tgz
+*.tar.gz
+.DS_Store

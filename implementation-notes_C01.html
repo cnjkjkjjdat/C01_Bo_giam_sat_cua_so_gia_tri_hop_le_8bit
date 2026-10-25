@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C01 — Bộ giám sát cửa sổ giá trị hợp lệ 8-bit · Ghi chú thực hiện</title>
+<style>
+:root{
+  --bg:#ffffff; --fg:#1a1d21; --muted:#5c6570; --line:#e3e7eb;
+  --accent:#1f5fa9; --accent-soft:#eef4fb; --code-bg:#f5f7f9;
+  --ok:#137a4d; --ok-bg:#e8f6ee; --warn:#8a5a00; --warn-bg:#fdf4e2;
+  --bad:#a52020; --bad-bg:#fceded; --open:#7a5ba8; --open-bg:#f3eefa;
+  --maxw:960px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181c; --fg:#e6e9ec; --muted:#98a2ad; --line:#2a2f36;
+    --accent:#6fa8e0; --accent-soft:#1c2733; --code-bg:#1b1f24;
+    --ok:#5cc08d; --ok-bg:#16291f; --warn:#d8a54a; --warn-bg:#2a2314;
+    --bad:#e88b8b; --bad-bg:#2b1a1a; --open:#b79ad6; --open-bg:#241d2e;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181c; --fg:#e6e9ec; --muted:#98a2ad; --line:#2a2f36;
+  --accent:#6fa8e0; --accent-soft:#1c2733; --code-bg:#1b1f24;
+  --ok:#5cc08d; --ok-bg:#16291f; --warn:#d8a54a; --warn-bg:#2a2314;
+  --bad:#e88b8b; --bad-bg:#2b1a1a; --open:#b79ad6; --open-bg:#241d2e;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 16px 96px}
+header.doc{
+  border-bottom:1px solid var(--line); margin-bottom:28px; padding:36px 0 22px;
+}
+header.doc .eyebrow{
+  font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; margin-bottom:10px;
+}
+header.doc h1{font-size:clamp(24px,4.4vw,34px); line-height:1.25; margin:0 0 14px}
+.badges{display:flex; flex-wrap:wrap; gap:7px; margin-top:6px}
+.badge{
+  font-size:12.5px; padding:3px 10px; border-radius:999px;
+  border:1px solid var(--line); color:var(--muted); background:var(--accent-soft);
+  white-space:nowrap;
+}
+.badge.ok{color:var(--ok); background:var(--ok-bg); border-color:transparent}
+.badge.warn{color:var(--warn); background:var(--warn-bg); border-color:transparent}
+.badge.bad{color:var(--bad); background:var(--bad-bg); border-color:transparent}
+.badge.open{color:var(--open); background:var(--open-bg); border-color:transparent}
+nav.toc{
+  border:1px solid var(--line); border-radius:10px; padding:16px 20px;
+  margin:0 0 32px; background:var(--accent-soft);
+}
+nav.toc p{margin:0 0 8px; font-weight:700; font-size:13px; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--muted)}
+nav.toc ul{margin:0; padding-left:20px}
+nav.toc li{margin:3px 0}
+nav.toc a{color:var(--fg); text-decoration:none}
+nav.toc a:hover{color:var(--accent); text-decoration:underline}
+nav.toc ul ul{padding-left:18px; font-size:14.5px}
+h2{font-size:22px; margin:40px 0 12px; padding-bottom:6px; border-bottom:1px solid var(--line)}
+h3{font-size:18px; margin:28px 0 8px}
+h4{font-size:16px; margin:22px 0 6px; color:var(--muted)}
+p{margin:12px 0}
+a{color:var(--accent)}
+ul,ol{padding-left:24px}
+li{margin:4px 0}
+code{
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  font-size:.9em; background:var(--code-bg); padding:1.5px 5px; border-radius:4px;
+}
+pre{
+  background:var(--code-bg); border:1px solid var(--line); border-radius:8px;
+  padding:14px 16px; overflow-x:auto; line-height:1.55; font-size:13.5px;
+}
+pre code{background:none; padding:0; font-size:inherit}
+blockquote{
+  margin:16px 0; padding:2px 18px; border-left:3px solid var(--accent);
+  background:var(--accent-soft); border-radius:0 8px 8px 0; color:var(--fg);
+}
+blockquote p{margin:10px 0}
+.tablewrap{overflow-x:auto; margin:16px 0; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:420px}
+th,td{border:1px solid var(--line); padding:7px 11px; text-align:left; vertical-align:top}
+th{background:var(--accent-soft); font-weight:650; white-space:nowrap}
+tbody tr:nth-child(even) td{background:color-mix(in srgb, var(--code-bg) 55%, transparent)}
+hr{border:0; border-top:1px solid var(--line); margin:34px 0}
+footer.doc{
+  margin-top:56px; padding-top:18px; border-top:1px solid var(--line);
+  color:var(--muted); font-size:13.5px;
+}
+.themebtn{
+  position:fixed; right:14px; bottom:14px; z-index:10;
+  border:1px solid var(--line); background:var(--bg); color:var(--muted);
+  border-radius:999px; padding:8px 14px; font-size:13px; cursor:pointer;
+}
+.themebtn:hover{color:var(--fg)}
+@media (max-width:640px){
+  .wrap{padding:0 16px 72px}
+  header.doc{padding:26px 0 18px}
+  nav.toc{padding:14px 16px}
+}
+@media print{
+  .themebtn{display:none}
+  nav.toc{break-inside:avoid}
+  pre,table,blockquote{break-inside:avoid}
+  body{font-size:11pt}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="doc">
+  <div class="eyebrow">RTL2GDS · Đề C01 · Ghi chú thực hiện</div>
+  <h1>C01 — Bộ giám sát cửa sổ giá trị hợp lệ 8-bit · Ghi chú thực hiện</h1>
+  <div class="badges"><span class="badge ">🔧 Đã vá và xác minh lại</span><span class="badge ">C · Ngưỡng, cảnh báo và giám sát</span><span class="badge ">Độ khó: Trung bình (nhẹ)</span><span class="badge ">Loại mạch: Tổ hợp</span><span class="badge ok">Mô phỏng: PASS</span><span class="badge ">Tổng hợp: 52 cell · 0 FF</span><span class="badge ">Đường tới hạn: 2,7 ns</span><span class="badge warn">Physical design: CHƯA CHẠY</span></div>
+</header>
+<nav class="toc"><p>Mục lục</p><ul><li><a href="#1-bai-toan-nay-thuc-chat-la-gi">1. Bài toán này thực chất là gì</a></li><li><a href="#2-ban-chat-ky-thuat-co-che-hoat-dong">2. Bản chất kỹ thuật — cơ chế hoạt động</a></li><li><a href="#3-doc-ma-nguon-rtl-lam-gi-tung-dong-quan-trong">3. Đọc mã nguồn: RTL làm gì, từng dòng quan trọng</a></li><li><a href="#4-vi-sao-chon-kien-truc-nay">4. Vì sao chọn kiến trúc này</a></li><li><a href="#5-cach-thuc-hien-lo-trinh-8-buoc-tu-dac-ta-toi-gdsii">5. Cách thực hiện — lộ trình 8 bước từ đặc tả tới GDSII</a></li><li><a href="#6-so-lieu-that-da-do-duoc-va-cach-doc-chung">6. Số liệu thật đã đo được và cách đọc chúng</a></li><li><a href="#7-tra-loi-cac-cau-hoi-ky-thuat-cua-charter-muc-2">7. Trả lời các câu hỏi kỹ thuật của Charter (mục 2)</a></li><li><a href="#8-tra-loi-cau-phan-tich-rieng-charter-muc-9">8. Trả lời câu phân tích riêng (Charter mục 9)</a></li><li><a href="#9-nhung-cho-sinh-vien-hay-sai-va-cach-phat-hien">9. Những chỗ sinh viên hay sai và cách phát hiện</a></li><li><a href="#10-cau-hoi-mentor-nen-dat-khi-bao-ve">10. Câu hỏi mentor nên đặt khi bảo vệ</a></li><li><a href="#11-gioi-han-da-chung-minh-duoc-gi-chua-chung-minh-duoc-gi">11. Giới hạn: đã chứng minh được gì, chưa chứng minh được gì</a></li></ul></nav>
+<main>
+<hr>
+<h2 id="1-bai-toan-nay-thuc-chat-la-gi">1. Bài toán này thực chất là gì</h2>
+<p>C01 trông như bài "so sánh hai lần": kiểm mẫu có <code>≥ min</code> và <code>≤ max</code> không. Nhưng bản chất
+của nó là một bài toán về <strong>phân hoạch không gian</strong> và về <strong>độ tin cậy của chính cấu hình</strong>.</p>
+<p>Đầu ra của C01 không phải dữ liệu — nó là <strong>một kết luận về dữ liệu</strong>. Khối nhận 24 bit và
+trả về 4 bit, và 4 bit đó phải thoả một tính chất mạnh hơn "đúng từng cái": chúng phải tạo
+thành một <strong>phân hoạch</strong> — đúng một cờ bật, không hơn không kém. Charter mục 2 câu 1 hỏi
+thẳng vào đó ("ba trạng thái loại trừ nhau — bằng chứng nào chứng minh?").</p>
+<p>Lớp thứ hai của bài toán, và là lớp dễ bị bỏ sót: <strong>cấu hình cũng có thể sai</strong>. Một ngưỡng
+đơn lẻ thì không bao giờ sai được — mọi giá trị 8 bit đều là ngưỡng hợp lệ. Nhưng một <strong>cặp</strong>
+ngưỡng thì có thể mâu thuẫn: <code>min &gt; max</code> mô tả một cửa sổ rỗng, không có ý nghĩa nào. Khi đó
+C01 <strong>không được đoán bừa</strong>; nó phải nói "tôi không phân loại được". Đó là lý do tồn tại của
+<code>config_error</code>, và đó cũng là điều phân biệt C01 với <code>threshold_alarm</code> một ngưỡng (Charter
+mục 2 câu 3).</p>
+<h2 id="2-ban-chat-ky-thuat-co-che-hoat-dong">2. Bản chất kỹ thuật — cơ chế hoạt động</h2>
+<p><strong>Cơ chế so sánh không dấu.</strong> Một phép <code>a &gt; b</code> trên 8 bit không dấu thực chất là lấy
+<strong>carry-out của <code>a + ~b + 1</code></strong>. Netlist thật của C01 xác nhận điều này: chuỗi so sánh được
+dựng bằng 7 cổng <code>maj3_1</code> (cổng đa số 3 ngõ, <code>X = AB|BC|AC</code> — đúng công thức carry-out của
+bộ cộng đầy đủ) mắc nối tiếp:</p>
+<pre><code>  tầng i:   carry[i+1] = maj3( a[i], ~b[i], carry[i] )
+                                              ▲
+                                              └── carry[i+1] CẦN carry[i] đã ổn định
+</code></pre>
+<p>Đây mới là nút thắt thật: <strong>phụ thuộc nối tiếp 8 tầng</strong>, giống hệt bản chất chuỗi carry của
+đề A01. Độ trễ đo được xác nhận: 7 tầng <code>maj3_1</code> với độ trễ đều nhau 0,34–0,36 ns, tổng
+2,70 ns. Không phải phép "so sánh" là chậm — phép <strong>lan truyền mượn từ bit thấp lên bit cao</strong>
+mới là chậm.</p>
+<p><strong>Cơ chế loại trừ ba trạng thái.</strong> Điểm tinh tế: <code>inside</code> <strong>không</strong> được tính bằng một phép
+so sánh riêng. Nó được tính bằng phủ định của hai phép kia: <code>inside = !below &amp;&amp; !above</code>. Cách
+này bảo đảm tính loại trừ <strong>theo cấu trúc</strong>, không theo may mắn:</p>
+<pre><code>   below_raw = (s &lt; min)          above_raw = (s &gt; max)
+
+   inside = !below_raw &amp; !above_raw
+            └──────────┬─────────┘
+       KHÔNG THỂ đồng thời với below_raw hay above_raw — đó là phủ định của chúng
+</code></pre>
+<p>Nếu thay bằng <code>inside = (s &gt;= min) &amp;&amp; (s &lt;= max)</code> — một phép tính độc lập — thì tính loại trừ
+trở thành <strong>hệ quả tình cờ</strong> của ba biểu thức riêng biệt, và một lỗi dấu <code>&lt;</code>/<code>&lt;=</code> ở một chỗ
+sẽ phá vỡ nó. Cách hiện tại làm cho INV-1 và INV-2 đúng <strong>theo xây dựng</strong>.</p>
+<p><strong>Cơ chế chặn khi cấu hình sai.</strong> Ba cờ bị ép về <code>000</code> khi <code>config_error=1</code>. Trong netlist,
+phép chặn được hiện thực ở <strong>cell cuối cùng</strong> của đường (<code>_98_</code>, <code>_99_</code> — chân <code>SLEEP</code>), nghĩa
+là ba bộ so sánh <strong>vẫn chạy</strong>, chỉ kết quả bị chặn ở cửa ra. Đây là đánh đổi: chặn ở cuối thì
+không kéo dài đường tới hạn (<code>config_error</code> ổn định ở 2,58 ns, sớm hơn <code>above</code> ở 2,70 ns);
+chặn ở đầu thì tiết kiệm công suất chuyển mạch nhưng nối thêm một chuỗi vào đường tới hạn.</p>
+<h2 id="3-doc-ma-nguon-rtl-lam-gi-tung-dong-quan-trong">3. Đọc mã nguồn: RTL làm gì, từng dòng quan trọng</h2>
+<p><strong>Đoạn 1 — ba dòng chặn latch (dòng 14–18):</strong></p>
+<pre><code class="language-systemverilog">always_comb begin
+    config_error = (min_val &gt; max_val);
+
+    below  = 1'b0;
+    inside = 1'b0;
+    above  = 1'b0;
+</code></pre>
+<p>Ba dòng gán mặc định chạy <strong>trước</strong> mọi nhánh. Chúng làm hai việc cùng lúc: (a) hiện thực
+yêu cầu chức năng "cả ba cờ về 0 khi lỗi cấu hình", và (b) chặn hoàn toàn nguy cơ suy ra
+latch. Nếu xoá chúng, Yosys sẽ suy ra <strong>ba latch</strong> và tổng hợp sẽ hỏng đúng như đề B09.
+So hai đề cạnh nhau là bài học trực quan nhất về mẫu "gán mặc định đầu khối".</p>
+<p><strong>Đoạn 2 — loại trừ theo xây dựng (dòng 20–24):</strong></p>
+<pre><code class="language-systemverilog">if (!config_error) begin
+    below  = (sample_in &lt; min_val);
+    above  = (sample_in &gt; max_val);
+    inside = !below &amp;&amp; !above;
+end
+</code></pre>
+<p>Dòng <code>inside = !below &amp;&amp; !above</code> đọc <strong>giá trị vừa gán</strong> của <code>below</code> và <code>above</code> trong cùng
+một khối thủ tục — đây là ngữ nghĩa gán chặn (blocking) và nó đúng. Về phần cứng, nó không
+tạo ra vòng lặp: công cụ thay <code>below</code>/<code>above</code> bằng biểu thức của chúng và ra một cổng NOR.</p>
+<p><strong>Đoạn 3 — nơi hồ sơ vấp (dòng 9):</strong></p>
+<pre><code class="language-systemverilog">output logic       inside,
+</code></pre>
+<p><code>inside</code> là <strong>từ khoá dành riêng của SystemVerilog</strong> (toán tử kiểm tra thuộc tập hợp). Icarus
+Verilog với <code>-g2012</code> từ chối, mô phỏng <strong>COMPILE_FAIL</strong>. Yosys chấp nhận vì frontend của nó
+chỉ cài đặt một tập con của IEEE 1800 và không giữ <code>inside</code> làm từ khoá — bằng chứng: netlist
+viết tên này dưới dạng định danh thoát <code>\inside</code>. Phán xử đầy đủ:
+<code>05_VERIFICATION/known_issues.md</code>.</p>
+<h2 id="4-vi-sao-chon-kien-truc-nay">4. Vì sao chọn kiến trúc này</h2>
+<p>Tên đề <strong>không</strong> chỉ định kiến trúc nội bộ, nên RTL viết ở mức hành vi (<code>&lt;</code>, <code>&gt;</code>) và để công
+cụ chọn. Kết quả là một phát hiện đáng giá khi đọc netlist: <strong><code>abc</code> chọn hai kiến trúc khác
+nhau cho ba phép so sánh cùng loại.</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Phép so sánh</th>
+<th>Kiến trúc</th>
+<th style="text-align: right;">Số cell</th>
+<th style="text-align: center;">Trên đường tới hạn?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sample &gt; max</code></td>
+<td>chuỗi mượn ripple (7 × <code>maj3_1</code>)</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>min &gt; max</code></td>
+<td>chuỗi mượn ripple (7 × <code>maj3_1</code>)</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: center;">✅ (đường thứ 2)</td>
+</tr>
+<tr>
+<td><code>sample &lt; min</code></td>
+<td><strong>cây so sánh song song</strong></td>
+<td style="text-align: right;">23</td>
+<td style="text-align: center;">❌</td>
+</tr>
+</tbody>
+</table></div>
+<p>Lý do đọc được từ netlist: hai phép đầu <strong>dùng chung toán hạng <code>~max_val</code></strong> — cả <code>_59_</code> và
+<code>_91_</code> cùng lấy <code>_03_ = ~max_val[1]</code>, và cứ thế qua 7 cổng đảo <code>_51_…_57_</code>. Chọn cùng kiến
+trúc cho chúng tiết kiệm được 7 cell. Phép thứ ba không dính <code>max_val</code>, không chia sẻ được
+gì, nên được tối ưu riêng — và ra một cấu trúc cây nhanh hơn.</p>
+<p><strong>Bài học:</strong> <em>"một phép <code>&gt;</code> trong RTL = một bộ so sánh trong phần cứng"</em> là cách nghĩ sai.
+Công cụ chọn kiến trúc theo <strong>ngữ cảnh chia sẻ tài nguyên</strong>, không theo từng dòng RTL.</p>
+<h2 id="5-cach-thuc-hien-lo-trinh-8-buoc-tu-dac-ta-toi-gdsii">5. Cách thực hiện — lộ trình 8 bước từ đặc tả tới GDSII</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Bước</th>
+<th>Việc</th>
+<th style="text-align: center;">Trạng thái C01</th>
+<th>Bằng chứng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Chốt bảng hành vi + ngữ nghĩa biên (đóng hay mở)</td>
+<td style="text-align: center;">✅</td>
+<td><code>02_SPECIFICATION/functional_spec.md</code> §2–§3</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Viết mô hình chuẩn Python <strong>độc lập</strong></td>
+<td style="text-align: center;">✅ PASS</td>
+<td><code>python_reference_run.log</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Đọc RTL, lập bảng ánh xạ RTL → phần cứng</td>
+<td style="text-align: center;">✅</td>
+<td><code>03_ARCHITECTURE/block_diagram.md</code> §2</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Viết testbench tự kiểm, quét đại diện</td>
+<td style="text-align: center;">🟡 đã viết, <strong>chưa chạy được</strong></td>
+<td><code>iverilog_compile.log</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Lint RTL</strong></td>
+<td style="text-align: center;">⬜ chưa có bước này</td>
+<td><em>Có bước này thì lỗi từ khoá đã bị bắt ở đây</em></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Tổng hợp + <strong>đếm cell tuần tự</strong></td>
+<td style="text-align: center;">✅ 52 cell, <strong>0 FF</strong></td>
+<td><code>synth_stat.txt</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>STA với clock ảo, đọc đường tới hạn</td>
+<td style="text-align: center;">✅ 2,70 ns, slack 7,30 ns</td>
+<td><code>timing_report_max.txt</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>P&amp;R → DRC/LVS → GDSII</td>
+<td style="text-align: center;">⬜ chưa chạy</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>Vòng đời của C01 có hình dạng bất thường: <strong>bước 4 hỏng nhưng bước 6–7 chạy được</strong>. Nguyên
+nhân là hai công cụ xử lý khác nhau một tên tín hiệu trùng từ khoá. Phải nói thẳng điều
+này khi bảo vệ, không được lờ đi.</p>
+</blockquote>
+<h2 id="6-so-lieu-that-da-do-duoc-va-cach-doc-chung">6. Số liệu thật đã đo được và cách đọc chúng</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Chỉ số</th>
+<th>Giá trị</th>
+<th>Nguồn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mô hình chuẩn Python</td>
+<td><strong>PASS</strong></td>
+<td><code>python_reference_run.log</code></td>
+</tr>
+<tr>
+<td>Mô phỏng RTL</td>
+<td><strong>COMPILE_FAIL</strong></td>
+<td><code>iverilog_compile.log</code></td>
+</tr>
+<tr>
+<td>Tổng hợp</td>
+<td><strong>PASS</strong> — 52 cell, <strong>0 FF</strong>, <strong>362,848 µm²</strong></td>
+<td><code>synth_stat.txt</code></td>
+</tr>
+<tr>
+<td>STA</td>
+<td><strong>PASS</strong> — <code>sample_in[0]</code> → <code>above</code>, <strong>2,70 ns</strong>, slack <strong>7,30 ns</strong></td>
+<td><code>timing_report_max.txt</code></td>
+</tr>
+<tr>
+<td>WNS / TNS</td>
+<td><code>0.00</code> / <code>0.00</code></td>
+<td><code>wns.txt</code>, <code>tns.txt</code></td>
+</tr>
+<tr>
+<td>Công suất</td>
+<td><strong>1,21e-05 W</strong> — tổ hợp <strong>100,0 %</strong>, tuần tự <strong>0,0 %</strong></td>
+<td><code>power_report.txt</code></td>
+</tr>
+<tr>
+<td>Cell trên đường tới hạn</td>
+<td>9: <code>_58_</code> isobuf + 7 × <code>maj3_1</code> + <code>_98_</code> isobuf</td>
+<td><code>timing_report_max.txt</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Những số này CHỨNG MINH được:</strong>
+- C01 là <strong>mạch tổ hợp thuần</strong>: 0 cell tuần tự trong netlist <strong>và</strong> nhóm công suất Sequential
+  = 0,0 %. Hai bằng chứng <strong>độc lập</strong> cho cùng một khẳng định — mức chắc chắn cao nhất trong
+  hồ sơ này, và là "dấu hiệu làm đúng" mà Charter mục 10 nêu.
+- Ba bộ so sánh <strong>chạy song song</strong>: bốn đầu ra ổn định trong cửa sổ 0,12 ns (2,58…2,70 ns).
+- Kiến trúc thật của hai bộ so sánh là <strong>chuỗi mượn nối tiếp</strong>: 7 tầng <code>maj3_1</code> độ trễ đều
+  0,34–0,36 ns — chữ ký không thể nhầm của ripple.
+- Quy mô thật (52 cell) <strong>nhỏ hơn 2,5–3,7 lần</strong> ước lượng Charter (130–190 cell), và lý do
+  giải thích được (chia sẻ cổng đảo, gộp cell phức hợp, xoá một cổng chặn thừa).</p>
+<p><strong>Những số này KHÔNG chứng minh được:</strong>
+- <strong>Không</strong> chứng minh C01 đúng chức năng ở mức RTL — mô phỏng chưa chạy được lần nào. Bằng
+  chứng chức năng hiện <strong>chỉ có một nguồn</strong>: mô hình chuẩn Python.
+- <strong>Không</strong> chứng minh netlist tương đương RTL (chưa mô phỏng gate-level).
+- <strong>Không</strong> nói gì về độ trễ sau routing: 2,70 ns là số <strong>sau tổng hợp, chưa có ký sinh dây</strong>;
+  số thật sau P&amp;R sẽ <strong>lớn hơn</strong>.
+- <strong>Không</strong> có biên an toàn qua góc PVT: mới chạy <code>tt_025C_1v80</code>, góc <code>ss</code> sẽ chậm hơn đáng kể.
+- Công suất là <strong>ước lượng</strong> với hoạt động mặc định, không từ VCD thật.
+- <code>period 10.0</code> trong SDC là <strong>mốc quy chiếu</strong>, <strong>không</strong> được đọc thành "C01 chạy ở 100 MHz".</p>
+<h2 id="7-tra-loi-cac-cau-hoi-ky-thuat-cua-charter-muc-2">7. Trả lời các câu hỏi kỹ thuật của Charter (mục 2)</h2>
+<p><strong>Câu 1 — Ba trạng thái loại trừ nhau, bằng chứng nào chứng minh?</strong>
+Ba mức bằng chứng, mạnh dần:
+1. <strong>Theo xây dựng (mạnh nhất):</strong> <code>inside = !below &amp;&amp; !above</code> là <strong>phủ định</strong> của hai cờ kia,
+   nên không thể đồng thời với chúng. <code>below</code> và <code>above</code> loại trừ nhau vì <code>s &lt; min</code> và
+   <code>s &gt; max</code> không thể cùng đúng khi <code>min ≤ max</code>.
+2. <strong>Theo netlist:</strong> <code>inside</code> được sinh bởi <strong>một</strong> cổng <code>nor2_1</code> (<code>_89_</code>) lấy đúng hai ngõ
+   là <code>_17_</code> (above_raw) và <code>_40_</code> (below_raw). Quan hệ phủ định hiện rõ ở mức cổng.
+3. <strong>Theo mô phỏng:</strong> mô hình chuẩn Python kiểm <code>b+i+a == 1</code> trên mọi vector (PASS).
+   Testbench SystemVerilog có assert tương đương ở dòng 41–53 — nhưng <strong>chưa chạy được</strong>.</p>
+<p><strong>Câu 2 — Lỗi cấu hình <code>min&gt;max</code> phát hiện bằng logic gì, tốn bao nhiêu cell?</strong>
+Bằng một phép so sánh 8 bit không dấu <code>min_val &gt; max_val</code>, hiện thực <strong>cùng kiến trúc</strong> và
+<strong>dùng chung 7 cổng đảo</strong> với bộ so sánh <code>sample &gt; max</code>. Chi phí đếm từ netlist:
+<strong>8 cell</strong> (chuỗi <code>_90_</code>+<code>_91_…_97_</code>) + <strong>2 cell</strong> chặn (<code>_98_</code>, <code>_99_</code>) = <strong>10/52 cell =
+19,2 % số cell</strong>. Chi phí thời gian ≈ <strong>0 ns</strong>: <code>config_error</code> ổn định ở 2,58 ns, <strong>sớm hơn</strong>
+đường tới hạn 2,70 ns. Lưu ý: 19,2 % là tỷ lệ <strong>số cell</strong>, không phải tỷ lệ <strong>diện tích</strong> —
+muốn số diện tích chính xác phải tổng hợp một bản không có <code>config_error</code> rồi lấy hiệu
+(<strong>chưa chạy</strong>).</p>
+<p><strong>Câu 3 — C01 khác <code>threshold_alarm</code> ở đúng chỗ nào?</strong>
+Không phải chỉ ở chỗ "nhân đôi số bộ so sánh". Thêm ngưỡng thứ hai sinh ra <strong>hai nghĩa vụ mới
+về chất</strong>: (a) phải <strong>chứng minh ba trạng thái loại trừ nhau</strong> — với 2 trạng thái thì tính
+loại trừ là hiển nhiên; (b) phải <strong>kiểm tra tính hợp lệ của chính cấu hình</strong> — với một ngưỡng
+thì không tồn tại khái niệm "cấu hình sai". Nghĩa vụ (b) tốn 19,2 % số cell. Bảng so sánh
+đầy đủ: <code>03_ARCHITECTURE/control.md</code> §5.</p>
+<h2 id="8-tra-loi-cau-phan-tich-rieng-charter-muc-9">8. Trả lời câu phân tích riêng (Charter mục 9)</h2>
+<blockquote>
+<p><em>"Kiểm trong báo cáo STA xem hai bộ so sánh có nằm trên cùng một đường tới hạn không, và
+giải thích ý nghĩa của việc chúng chạy song song."</em></p>
+</blockquote>
+<p><strong>Trả lời: KHÔNG — chúng chạy song song. Bằng chứng số:</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Bằng chứng</th>
+<th>Số liệu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Đường tới hạn có <strong>9 cell</strong>, tất cả thuộc <strong>một</strong> bộ so sánh + 1 cổng chặn</td>
+<td><code>_58_</code> + <code>_59_…_65_</code> + <code>_98_</code></td>
+</tr>
+<tr>
+<td>Bốn đầu ra ổn định trong cửa sổ <strong>0,12 ns</strong></td>
+<td>2,58 / 2,65 / 2,66 / 2,70 ns</td>
+</tr>
+<tr>
+<td>Nếu nối tiếp, dự kiến ≈ 2 × 2,58 = <strong>5,16 ns</strong>; số đo thật <strong>2,70 ns</strong></td>
+<td>lệch gần 2 lần</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Phát hiện phụ, và là phần thú vị nhất:</strong> đường chậm nhất tới <code>below</code> <strong>không</strong> đi qua bộ so
+sánh <code>sample &lt; min</code> — nó đi qua bộ so sánh <strong><code>min &gt; max</code></strong> (chuỗi <code>_90_…_97_</code>) rồi mới tới
+cổng chặn <code>_99_</code>. Nghĩa là <strong>cái chặn chậm hơn cái bị chặn</strong>. Suy ra: cây so sánh
+<code>sample &lt; min</code> thật sự <strong>nhanh hơn</strong> chuỗi ripple, dù cả hai cùng là so sánh 8 bit.</p>
+<p><strong>Ý nghĩa của việc song song:</strong> độ trễ tổng bằng độ trễ <strong>một</strong> bộ so sánh cộng một tầng
+(2,70 ns), thay vì tổng ba bộ (~7,7 ns). Hệ quả thực tiễn: thêm phép so sánh thứ ba
+(<code>config_error</code>) gần như <strong>miễn phí về thời gian</strong> — nó ổn định sớm hơn cả đường tới hạn.
+Cái giá nằm ở <strong>diện tích</strong>, không nằm ở tốc độ. Muốn nhanh hơn nữa thì phải đổi kiến trúc
+<strong>bên trong một</strong> bộ so sánh (ripple → cây), chứ không phải giảm số bộ so sánh.</p>
+<p><strong>Phát hiện thứ ba — công cụ đã chứng minh một cổng chặn là thừa.</strong> Netlist sinh <code>inside</code>
+bằng <code>nor2(_17_, _40_)</code>, <strong>không có <code>config_error</code></strong>, trong khi RTL có <code>if (!config_error)</code>.
+Công cụ đúng: nếu <code>inside = 1</code> thì <code>min ≤ sample ≤ max</code> ⟹ <code>min ≤ max</code> ⟹ <code>config_error = 0</code>.
+Khi cửa sổ rỗng, <code>inside</code> tự bằng 0. Tiết kiệm 1 cell. Chứng minh đầy đủ:
+<code>03_ARCHITECTURE/datapath.md</code> §5.</p>
+<h2 id="9-nhung-cho-sinh-vien-hay-sai-va-cach-phat-hien">9. Những chỗ sinh viên hay sai và cách phát hiện</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Sai lầm</th>
+<th>Hậu quả</th>
+<th>Phát hiện bằng bằng chứng nào</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Dùng <code>&lt;</code> thay <code>&lt;=</code> ở biên (hoặc ngược lại)</td>
+<td><code>sample = min</code> bị xếp nhầm vào <code>below</code></td>
+<td>Chạy ca <code>check(50,50,100)</code> — ca #2 của Charter mục 8</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Quên hẳn <code>config_error</code></td>
+<td>Cấu hình <code>min&gt;max</code> cho ra phân loại <em>trông hợp lệ</em></td>
+<td>Chạy ca <code>check(75,100,50)</code>; hoặc đọc netlist tìm chuỗi so sánh thứ ba</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Có <code>config_error</code> nhưng <strong>quên chặn</strong> ba cờ</td>
+<td>Vi phạm INV-3: cờ lỗi bật mà vẫn có cờ phân loại bật</td>
+<td>Assert <code>config_error \|-&gt; {below,inside,above}==3'b000</code> (TB dòng 52)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Xoá ba dòng gán mặc định vì "đằng nào cũng gán trong <code>if</code>"</td>
+<td>Sinh <strong>3 latch</strong>, mất tính tổ hợp</td>
+<td><code>grep -i latch</code> trong <code>synth_stat.txt</code>; đối chiếu đề B09</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Đặt tên tín hiệu trùng <strong>từ khoá</strong> (<code>inside</code>, <code>ref</code>, <code>config</code>, <code>time</code>, <code>type</code>…)</td>
+<td>Mô phỏng không biên dịch được, dù tổng hợp vẫn chạy</td>
+<td>Đối chiếu <strong>số dòng lỗi</strong> với <strong>nội dung dòng mã</strong>. Xem <code>known_issues.md</code> §2</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Dùng <code>signed</code> cho toán hạng</td>
+<td><code>255</code> thành <code>-1</code> ⟹ ca <code>check(255,0,255)</code> ra <code>below</code> thay vì <code>inside</code></td>
+<td>Ca biên #10 trong <code>corner_cases.md</code> §2</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Tin rằng "tổng hợp PASS = thiết kế đúng"</td>
+<td>Bỏ qua việc chưa kiểm chứng chức năng</td>
+<td>So <code>synth_stat.txt</code> (PASS) với <code>iverilog_compile.log</code> (FAIL)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Suy tỷ lệ <strong>diện tích</strong> từ tỷ lệ <strong>số cell</strong></td>
+<td>Số sai trong báo cáo</td>
+<td>Cell không bằng nhau về diện tích; chỉ tổng diện tích 362,848 µm² là số đo</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Đọc <code>period 10.0</code> thành "chạy ở 100 MHz"</td>
+<td>Phát biểu vượt mức</td>
+<td><code>design.sdc</code> ghi rõ <code>vclk</code> là mốc quy chiếu; C01 không có clock</td>
+</tr>
+<tr>
+<td>10</td>
+<td>"Cải tiến" C01 bằng cách thêm hysteresis cho cờ đỡ nhấp nháy</td>
+<td><strong>Đổi đề</strong> (thành C04) và phá tính tổ hợp thuần</td>
+<td>Charter mục 3 liệt hysteresis vào ngoài phạm vi</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Nghĩ INV-3 đúng cả ở trạng thái quá độ</td>
+<td>Suy luận sai về glitch</td>
+<td>Trong netlist, <code>above</code> bị chặn ở <strong>cell cuối</strong> ⟹ có cửa sổ thời gian <code>above=1</code> và <code>config_error=1</code> cùng lúc</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="10-cau-hoi-mentor-nen-dat-khi-bao-ve">10. Câu hỏi mentor nên đặt khi bảo vệ</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Câu hỏi</th>
+<th>Đáp án mong đợi</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Tổng hợp PASS mà mô phỏng không biên dịch được — giải thích?</td>
+<td><code>inside</code> là từ khoá SystemVerilog. Icarus (<code>-g2012</code>) đúng khi từ chối; Yosys chấp nhận vì frontend chỉ cài tập con của IEEE 1800. Bằng chứng: netlist viết <code>\inside</code> dạng định danh thoát</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Làm sao chứng minh lỗi đúng do tên <code>inside</code>?</td>
+<td>Đối chiếu 9 dòng lỗi với nội dung mã: <strong>tất cả</strong> đều chứa <code>inside</code> đơn lẻ; không dòng nào khác bị báo lỗi; <code>inside_ref</code> không gây lỗi; golden model sạch lỗi</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Hai bộ so sánh có cùng đường tới hạn không? Số nào chứng minh?</td>
+<td>Không. Đường tới hạn 9 cell đều thuộc <strong>một</strong> bộ. Bốn đầu ra ổn định trong 0,12 ns. Nếu nối tiếp thì phải ≈ 5,16 ns chứ không phải 2,70 ns</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>maj3_1</code> làm gì trong một bộ so sánh?</td>
+<td>Bộ sinh carry/mượn: <code>a &gt; b</code> = carry-out của <code>a + ~b + 1</code>, mà carry-out mỗi tầng chính là hàm đa số 3 ngõ</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Vì sao ba bộ so sánh cùng loại mà ra hai kiến trúc khác nhau?</td>
+<td>Hai bộ dính <code>max_val</code> <strong>dùng chung 7 cổng đảo</strong> ⟹ giữ cùng kiến trúc để chia sẻ. Bộ thứ ba không chia sẻ được gì ⟹ tối ưu riêng, ra cây nhanh hơn</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Đường chậm nhất tới <code>below</code> đi qua bộ so sánh nào?</td>
+<td>Qua <code>min &gt; max</code>, <strong>không</strong> phải <code>sample &lt; min</code>. Bất ngờ: cái chặn chậm hơn cái bị chặn ⟹ cây nhanh hơn ripple</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Trong netlist, <code>inside</code> có bị chặn bởi <code>config_error</code> không?</td>
+<td>Không — công cụ chứng minh được là thừa: <code>inside=1</code> ⟹ <code>min ≤ s ≤ max</code> ⟹ <code>min ≤ max</code> ⟹ <code>config_error=0</code>. Cửa sổ rỗng thì <code>inside</code> tự bằng 0</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>lpflow_isobufsrc_1</code> xuất hiện 4 lần — để cách ly nguồn?</td>
+<td>Không. <code>abc</code> chọn vì hàm <code>X = A &amp; !SLEEP</code> và diện tích nhỏ. Hai cái làm tầng mượn đầu chuỗi, hai cái làm cổng chặn</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Ba dòng <code>below=0; inside=0; above=0;</code> có xoá được không?</td>
+<td>Không — sinh <strong>ba latch</strong> (đúng lỗi đề B09) và mất luôn hành vi "cả ba cờ về 0 khi lỗi cấu hình"</td>
+</tr>
+<tr>
+<td>10</td>
+<td>C01 đã được kiểm chứng chức năng chưa?</td>
+<td><strong>Chưa.</strong> Mô phỏng RTL chưa chạy được lần nào; bằng chứng chức năng chỉ có một nguồn là mô hình chuẩn Python</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>config_error=1</code> và <code>above=1</code> có bao giờ cùng xảy ra?</td>
+<td>Ở trạng thái ổn định: không. Ở quá độ: có — <code>above</code> bị chặn ở cell cuối. INV-3 là bất biến ở trạng thái ổn định</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Vì sao 52 cell trong khi Charter ước lượng 130–190?</td>
+<td>Chia sẻ 7 cổng đảo; <code>abc</code> gộp cổng vào cell phức hợp; xoá một cổng chặn thừa. Ước lượng Charter là con số dự trù</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="11-gioi-han-da-chung-minh-duoc-gi-chua-chung-minh-duoc-gi">11. Giới hạn: đã chứng minh được gì, chưa chứng minh được gì</h2>
+<p><strong>Đã chứng minh được:</strong>
+- <strong>C01 là mạch tổ hợp thuần, 0 ô nhớ</strong> — hai bằng chứng độc lập (netlist 0 cell tuần tự;
+  công suất Sequential 0,0 %). "Dấu hiệu làm đúng" của Charter mục 10.
+- Quy mô thật <strong>52 cell, 362,848 µm²</strong>, đối chiếu được từng instance với từng dòng RTL.
+- Độ trễ lớn nhất <strong>sau tổng hợp</strong> <strong>2,70 ns</strong>, slack 7,30 ns.
+- <strong>Ba bộ so sánh chạy song song</strong> — Charter mục 9, trả lời bằng số liệu không suy đoán.
+- Kiến trúc thật: hai chuỗi ripple 7 tầng <code>maj3_1</code> + một cây so sánh, đọc từ netlist.</p>
+<p><strong>Chưa chứng minh được:</strong>
+- <strong>RTL khớp mô hình chuẩn</strong> — mô phỏng <code>COMPILE_FAIL</code>, chưa chạy được lần nào. Đây là lỗ
+  hổng nghiêm trọng nhất của hồ sơ, dù bề ngoài hồ sơ có vẻ đầy đủ số liệu. Kéo theo: ba
+  bất biến INV-1…INV-3 chưa được kiểm trên chính RTL.
+- Kết luận của công cụ rằng cổng chặn <code>inside</code> là thừa — mới có <strong>chứng minh hình thức bằng
+  tay</strong>, chưa có xác nhận thực nghiệm; và tương đương RTL ↔ netlist chưa kiểm.
+- Độ trễ <strong>thật sau routing</strong> (2,70 ns chưa tính ký sinh dây); biên an toàn qua các góc PVT;
+  công suất thật của ứng dụng (mới là ước lượng).
+- Mọi kết luận mức layout: DRC, LVS, GDSII — chưa chạy bước nào.</p>
+<p><strong>Không được phát biểu:</strong> "đã sign-off", "đã tape-out", "chạy được ở 100 MHz", "C01 đã được
+kiểm chứng chức năng", "config_error tốn 19,2 % <strong>diện tích</strong>".</p>
+<p><strong>Phát biểu đúng:</strong> <em>"C01 tổng hợp được ra 52 cell không có ô nhớ nào, diện tích 362,848 µm²,
+độ trễ tổ hợp lớn nhất sau tổng hợp 2,70 ns ở góc typical. Ba bộ so sánh 8 bit chạy song song
+— chứng minh bằng việc bốn đầu ra ổn định trong cửa sổ 0,12 ns. Kiểm chứng chức năng ở mức
+RTL hiện chưa thực hiện được vì tên cổng <code>inside</code> trùng từ khoá SystemVerilog; bản vá đã có,
+chưa áp dụng, cần giảng viên duyệt."</em></p>
+<hr>
+<p><em>Phiên bản: v1.0 · Ngày: 2026-09-24</em></p>
+</main>
+<footer class="doc">
+  Tài liệu sinh từ <code>implementation-notes_C01.md</code>.
+  Mọi số liệu đều kèm công cụ, phiên bản và lệnh tái lập trong
+  <code>07_TRACEABILITY/evidence_index.md</code>.
+</footer>
+</div>
+<script>
+(function(){
+  var b=document.createElement('button');
+  b.className='themebtn'; b.type='button';
+  function lbl(){var t=document.documentElement.getAttribute('data-theme');
+    return t==='dark'?'Nen sang':(t==='light'?'Nen toi':'Doi nen');}
+  b.textContent=lbl();
+  try{var s=localStorage.getItem('rtl2gds-theme'); if(s)document.documentElement.setAttribute('data-theme',s);}catch(e){}
+  b.textContent=lbl();
+  b.addEventListener('click',function(){
+    var cur=document.documentElement.getAttribute('data-theme');
+    var mq=window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var next=cur?(cur==='dark'?'light':'dark'):(mq?'light':'dark');
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('rtl2gds-theme',next);}catch(e){}
+    b.textContent=lbl();
+  });
+  document.body.appendChild(b);
+})();
+</script>
+</body>
+</html>

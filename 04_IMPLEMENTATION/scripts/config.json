@@ -1,0 +1,38 @@
+{
+  "project_id": "C01",
+  "title": "Bộ giám sát cửa sổ giá trị hợp lệ 8-bit",
+  "group": "C · Ngưỡng, cảnh báo và giám sát",
+  "difficulty": "Trung bình (nhẹ)",
+  "circuit_type": "Tổ hợp",
+  "charter_scale": "~130–190 cell · 1×1 tile",
+  "top_module": "c01_window_monitor",
+  "clock_port": null,
+  "has_clock": false,
+  "expected_ff_zero": true,
+  "technology": "sky130A",
+  "std_cell_library": "sky130_fd_sc_hd",
+  "liberty_corner": "tt_025C_1v80",
+  "flow": "LibreLane/OpenROAD",
+  "measured": {
+    "sim": "PASS",
+    "pyref": "PASS",
+    "synth": "PASS",
+    "sta": "PASS",
+    "cells": 52,
+    "flip_flops": 0,
+    "area_um2": 362.848,
+    "critical_path_ns": 2.7,
+    "startpoint": "sample_in[0]",
+    "endpoint": "above",
+    "power_total_w": "1.21e-05"
+  },
+  "not_run": [
+    "floorplan",
+    "placement",
+    "routing",
+    "drc",
+    "lvs",
+    "gds"
+  ],
+  "source_dir_origin": "C01_FINAL_MENTOR_PACKAGE_v1_0"
+}
